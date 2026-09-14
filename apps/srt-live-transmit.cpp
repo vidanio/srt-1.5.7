@@ -136,7 +136,7 @@ struct LiveTransmitConfig
     bool log_internal;
     string logfile;
     int bw_report = 0;
-    bool srctime = false;
+    bool srctime = true;
     size_t buffering = 10;
     int stats_report = 0;
     string stats_out;
@@ -315,7 +315,9 @@ int parse_args(LiveTransmitConfig &cfg, int argc, char** argv)
     cfg.timeout_mode = Option<OutNumber>(params, o_timeout_mode);
     cfg.chunk_size   = Option<OutNumber>(params, "-1", o_chunk);
     cfg.srctime      = Option<OutBool>(params, cfg.srctime, o_srctime);
+    cerr << "SRCTIME: " << cfg.srctime << endl;
     const int buffering = Option<OutNumber>(params, "10", o_buffering);
+    cerr << "BUFFERING: " << buffering << endl;
     if (buffering <= 0)
     {
         cerr << "ERROR: Buffering value should be positive. Value provided: " << buffering << "." << endl;

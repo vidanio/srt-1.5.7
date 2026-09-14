@@ -13,13 +13,13 @@ To uninstall, call `make -n install` to list all the dependencies, and then pass
 Here is a link to a demo showing how CMake can be used to build SRT:
 [Quickstart: Running SRT and FFmpeg on Ubuntu](https://www.youtube.com/watch?v=XOtUOVhussc&t=5s).
 
-## Ubuntu 14
+## Ubuntu 14 / Debian 11+
 
 ```shell
 sudo apt-get update
 sudo apt-get upgrade
 sudo apt-get install tclsh pkg-config cmake libssl-dev build-essential
-./configure
+./configure --prefix=/usr --enable-pktinfo --enable-bonding --enable-aead-api-preview --use-enclib=openssl-evp --enable-maxrexmitbw
 make
 ```
 

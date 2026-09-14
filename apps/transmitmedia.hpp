@@ -14,7 +14,7 @@
 #include <string>
 #include <map>
 #include <stdexcept>
-
+#include <chrono>
 #include "transmitbase.hpp"
 #include <udt.h> // Needs access to CUDTException
 
@@ -85,6 +85,9 @@ protected:
 class SrtSource: public Source, public SrtCommon
 {
     std::string hostport_copy;
+    typedef std::chrono::steady_clock::time_point time_point;
+    time_point start_time= std::chrono::steady_clock::now();
+    int64_t secondscount_old = 0;
 public:
 
     SrtSource(std::string host, int port, const std::map<std::string,std::string>& par);
@@ -118,11 +121,14 @@ public:
         return socket;
     }
 
-    bool AcceptNewClient() override { return SrtCommon::AcceptNewClient(); }
+    bool AcceptNewClient() override { start_time= std::chrono::steady_clock::now(); return SrtCommon::AcceptNewClient(); }
 };
 
 class SrtTarget: public Target, public SrtCommon
 {
+    typedef std::chrono::steady_clock::time_point time_point;
+    time_point start_time= std::chrono::steady_clock::now();
+    int64_t secondscount_old = 0;
 public:
 
     SrtTarget(std::string host, int port, const std::map<std::string,std::string>& par)
@@ -153,7 +159,7 @@ public:
             socket = SrtCommon::Listener();
         return socket;
     }
-    bool AcceptNewClient() override { return SrtCommon::AcceptNewClient(); }
+    bool AcceptNewClient() override { start_time= std::chrono::steady_clock::now(); return SrtCommon::AcceptNewClient(); }
 };
 
 

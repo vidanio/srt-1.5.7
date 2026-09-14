@@ -242,9 +242,9 @@ public:
         // Header
         if (!first_line_printed)
         {
-#ifdef HAVE_CXX_STD_PUT_TIME
-            output << "Timepoint,";
-#endif
+// #ifdef HAVE_CXX_STD_PUT_TIME
+//            output << "Timepoint,";
+// #endif
             output << "Time,SocketID";
 
             for (auto& i: g_SrtStatsTable)
@@ -258,11 +258,11 @@ public:
         // Values
 #ifdef HAVE_CXX_STD_PUT_TIME
         // HDR: Timepoint
-        output << print_timestamp() << ",";
+        // output << print_timestamp() << ",";
 #endif // HAVE_CXX_STD_PUT_TIME
 
         // HDR: Time,SocketID
-        output << mon.msTimeStamp << "," << sid;
+        output << "STATS=>" << mon.msTimeStamp << "," << sid;
 
         // HDR: the loop of all values in g_SrtStatsTable
         for (auto& i: g_SrtStatsTable)

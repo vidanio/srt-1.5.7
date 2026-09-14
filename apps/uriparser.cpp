@@ -9,6 +9,7 @@
  */
 
 // STL includes
+#include <iostream>
 #include <algorithm>
 #include <map>
 #include <string>
@@ -26,6 +27,94 @@
 using namespace std;
 
 map<string, UriParser::Type> g_types;
+
+/**
+ * Converts a single hexadecimal character to its decimal equivalent.
+ *
+ * @param x the hexadecimal character to convert
+ *
+ * @return the decimal equivalent of the hexadecimal character
+ */
+inline char fromHex(const char& x) {
+    return isdigit(x) ? x - '0' : (x | 32) - 'a' + 10;
+}
+
+/**
+ * URL decodes a given string by replacing %XX with the corresponding ASCII
+ * character and replacing '+' with ' '.
+ *
+ * @param sUrl the URL encoded string to be decoded
+ *
+ * @return the decoded string
+ *
+ * @throws none
+ */
+std::string urlDecode(const std::string& sUrl) {
+    std::string result;
+    result.reserve(sUrl.length());
+    for (std::size_t i = 0; i < sUrl.length(); ++i) {
+        if (sUrl[i] == '%') {
+            if (i + 2 < sUrl.length()) {
+                char decoded = fromHex(sUrl[i + 1]) * 16 + fromHex(sUrl[i + 2]);
+                result += decoded;
+                i += 2;
+            }
+        } else if (sUrl[i] == '+') {
+            result += ' ';
+        } else {
+            result += sUrl[i];
+        }
+    }
+    return result;
+}
+
+/**
+ * URL-encodes a given string by replacing spaces with '+'
+ * and special characters with '%XX' where XX is their ASCII code in hexadecimal.
+ *
+ * @param sUrl the string to be encoded
+ *
+ * @return the URL-encoded string
+ *
+ * @throws None
+ */
+std::string urlEncode(const std::string& sUrl) {
+    std::stringstream escaped;
+    escaped.fill('0');
+    escaped << std::hex;
+
+    for (char c : sUrl) {
+        if (isalnum(c) || c == '~' || c == '-' || c == '.' || c == '_') {
+            escaped << c;
+        } else if (c == ' ') {
+            escaped << '+';
+        } else {
+            escaped << '%' << std::setw(2) << int((unsigned char) c);
+        }
+    }
+
+    return escaped.str();
+}
+
+/**
+ * Check if the given URL is escaped.
+ *
+ * @param sUrl the URL to be checked
+ *
+ * @return true if the URL is escaped, false otherwise
+ */
+bool IsURLEscaped(const std::string& sUrl) { 
+    const auto length = sUrl.length();
+    if (length < 3) {
+        return false;
+    }
+    for (std::size_t i = 0; i < length - 2; ++i) {
+        if (sUrl[i] == '%' && isxdigit(sUrl[i + 1]) && isxdigit(sUrl[i + 2])) {
+            return true;
+        }
+    }
+    return false;
+}
 
 // Map construction using the initializer list is only available starting from C++11.
 // This dummy structure is used instead.
@@ -150,48 +239,48 @@ string UriParser::queryValue(const string& strKey) const
 
 // NOTE: handles percent encoded single byte ASCII / Latin-1 characters but not unicode characters and encodings
 
-static string url_decode(const string& str)
-{
-    string ret;
-    ret.reserve(str.size());
+// static string url_decode(const string& str)
+// {
+//     string ret;
+//     ret.reserve(str.size());
 
-    size_t end_idx = 0;
+//     size_t end_idx = 0;
 
-    for (;;)
-    {
-        size_t idx = str.find('%', end_idx);
-        if (idx == string::npos)
-            break;
+//     for (;;)
+//     {
+//         size_t idx = str.find('%', end_idx);
+//         if (idx == string::npos)
+//             break;
 
-        if (idx + 2 >= str.size()) // bad percent encoding at the end
-            break;
+//         if (idx + 2 >= str.size()) // bad percent encoding at the end
+//             break;
 
-        ret += str.substr(end_idx, idx - end_idx);
+//         ret += str.substr(end_idx, idx - end_idx);
 
-        // make a "string" out of only two characters following %
-        char     tmp[3] = { str[idx+1], str[idx+2], '\0' };
-        char*    endptr = 0;
-        unsigned val = strtoul(tmp, &endptr, 16);
-        if (endptr != &tmp[2])
-        {
-            // Processing was not correct. Skip these and proceed.
-            ret += str[idx];
-            end_idx = idx + 1;
-        }
-        else
-        {
-            ret += char(val);
-            end_idx = idx + 3;
-        }
+//         // make a "string" out of only two characters following %
+//         char     tmp[3] = { str[idx+1], str[idx+2], '\0' };
+//         char*    endptr = 0;
+//         unsigned val = strtoul(tmp, &endptr, 16);
+//         if (endptr != &tmp[2])
+//         {
+//             // Processing was not correct. Skip these and proceed.
+//             ret += str[idx];
+//             end_idx = idx + 1;
+//         }
+//         else
+//         {
+//             ret += char(val);
+//             end_idx = idx + 3;
+//         }
 
-        // And again search anew since end_idx.
-    }
+//         // And again search anew since end_idx.
+//     }
 
-    // Copy the rest of the string that wasn't processed.
-    ret += str.substr(end_idx, str.size() - end_idx);
+//     // Copy the rest of the string that wasn't processed.
+//     ret += str.substr(end_idx, str.size() - end_idx);
 
-    return ret;
-}
+//     return ret;
+// }
 
 void UriParser::Parse(const string& strUrl, DefaultExpect exp)
 {
@@ -353,7 +442,10 @@ void UriParser::Parse(const string& strUrl, DefaultExpect exp)
         idx = strQueryPair.find("=");
         if (idx != string::npos)
         {
-            m_mapQuery[url_decode(strQueryPair.substr(0, idx))] = url_decode(strQueryPair.substr(idx + 1, strQueryPair.size() - (idx + 1)));
+            string mapkey = strQueryPair.substr(0, idx);
+            string value = strQueryPair.substr(idx + 1, strQueryPair.size() - (idx + 1));
+            m_mapQuery[mapkey] = IsURLEscaped(value) ? urlDecode(value) : value;
+            cerr << "[PARAM:] " << m_proto << " -> " << mapkey << " = " << m_mapQuery[mapkey] << endl;
         }
     }
 
